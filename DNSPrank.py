@@ -11,26 +11,22 @@ import os
 import colorama
 from colorama import Fore, Back
 import sys
+import re
 
 colorama.init()
 
 # COLORS
-Y = Fore.YELLOW
+Y, R = Fore.YELLOW, Fore.RED
 
-BB, BBL = Back.BLUE, Back.BLACK
+BB, BBL, YY = Back.BLUE, Back.BLACK, Back.YELLOW
 
-# TODO: Create a function to get all bookmarks in the local machine.
-# TODO: Create a function to get all urls from the complicated structure of the json file.
-# TODO: Add those sites to the list of sites.
-
-
-# Add more sites.
+# TODO: 
 
 # Define the ASCII art
 ascii_art = """\n\n\n
 #==============================================|
-# /\_/\  Looks like you found out!             |
-#( o.o ) Btw I'm a cat that pranks people hehe.|
+# /\_/\  Looks like you found out that I'm     |
+#( o.o ) blocking your sites hehe.             |
 # > ^ <  - kenken                              |
 #/  ~  \\                                       |
 #==============================================|
@@ -52,6 +48,13 @@ ascii_art2 = """\n\n\n
 #=================================================
 """
 
+ascii_art3 ="""\n
+  / \__                                     This tool blocks access from
+ (    @\____                                common websites and retrieve 
+ /         O   DNS PRANKER.                 bookmarks from the target PC 
+/   (_____/    - kenken                     and blocks all websites from 
+/_____/   U                                 those booksmarks. \n
+"""
 
 
 # Check the current OS, since every OS have different hosts 
@@ -62,9 +65,29 @@ if os.name == 'nt':
 else: 
     dest = "/etc/hosts"
 
-# List of sites to block.
-sites = ["youtube.com", "facebook.com", "messenger.com"]
+User = os.getenv('USERNAME')
+# List of bookmarks directory from different browsers and OS.
+bookmarks_dir = [
+         f"C:/Users/{User}/AppData/Local/Google/Chrome/User Data/Default/Bookmarks",
+         f"C:/Users/{User}/AppData/Roaming/Opera Software/Opera GX Stable/Bookmarks",
+         f"C:/Users/{User}/AppData/Roaming/Opera Software/Opera Stable/Bookmarks",
+         ]
 
+
+# List of sites to block.
+sites = ["youtube.com", "facebook.com", "messenger.com", "google.com"]
+
+
+def getBooksmarksFile(bookmarks_dir) -> list:
+    with open(bookmarks_dir, 'r') as f:
+        file = f.read()
+    return file
+
+def getUrl(file: str) -> list:
+    bookmarks = re.findall(r'"url":.*', file)
+    for i in range(len(bookmarks)):
+        bookmarks[i] = bookmarks[i].removeprefix('"url": ').strip('"')
+    return bookmarks
 
 
 def flushDNS() -> None:
@@ -97,6 +120,23 @@ def changeHosts(sites: list) -> None:
     print(f"[*]{BB}INFO:{BBL}{Y} All sites have been blocked.")
 
 def main():
+    print("=" * 100)
+    print(ascii_art3)
+    print("=" * 100)
+    print('\n\n')
+    print(f"{Y}[*]{BB}INFO:{BBL}{Y} Finding bookmarks...")
+    for bookmarks in bookmarks_dir:
+        Booksmarks = []
+        try:
+            Booksmarks = getUrl(getBooksmarksFile(bookmarks))
+        except FileNotFoundError:
+            print(f"[*]{YY}{R}WARNING:{BBL} {Y}No bookmarks for {bookmarks}, continuing...")
+
+        Booksmarksnum = len(Booksmarks)
+        print(f"[*]{BB}INFO:{BBL}{Y} Found {Booksmarksnum}.")
+        print(f"[*]{BB}INFO:{BBL}{Y} Adding the found bookmarks to the list to block...")
+        sites.extend(Booksmarks)
+
     try:
         #flushDNS()
         #clearTemp()
@@ -111,6 +151,7 @@ def main():
         print(f"[*]{BB}INFO:{BBL}{Y} You must run the script as admin.")
     input()
     print(f"[*]{BB}INFO:{BBL}{Y} Exiting...")
+
 if __name__ == "__main__":
     main()
 
